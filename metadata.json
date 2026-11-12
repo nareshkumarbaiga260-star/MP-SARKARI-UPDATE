@@ -1,0 +1,6 @@
+{
+  "name": "MP SARKARI UPDATE",
+  "description": "मध्य प्रदेश एवं केंद्र सरकार की सभी सरकारी नौकरियों, योजनाओं, एडमिट कार्ड, रिजल्ट और भर्ती अपडेट्स का संपूर्ण हिंदी पोर्टल।",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

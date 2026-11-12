@@ -1,0 +1,37 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    // Strict single authorized owner verification
+    function isSingleAuthorizedAdmin() {
+      return isSignedIn() &&
+        request.auth.token.email.lower() == 'nareshkumarbaiga260@gmail.com';
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() > 0 && id.size() <= 128;
+    }
+
+    // Default deny catch-all
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Posts collection: Public read for all visitors; write/edit/delete strictly for single authorized admin
+    match /posts/{postId} {
+      allow read: if true;
+      allow create, update, delete: if isValidId(postId) && isSingleAuthorizedAdmin();
+    }
+
+    // Admin accounts: Strictly locked - no additional admin creation permitted
+    match /admins/{adminId} {
+      allow read, write: if false;
+    }
+  }
+}

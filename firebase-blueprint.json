@@ -1,0 +1,54 @@
+{
+  "entities": {
+    "Post": {
+      "title": "Post",
+      "description": "Government job, scheme, admit card, result, or notification post",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string", "maxLength": 300 },
+        "category": { "type": "string", "maxLength": 50 },
+        "department": { "type": "string", "maxLength": 150 },
+        "shortDescription": { "type": "string", "maxLength": 1000 },
+        "fullDescription": { "type": "string", "maxLength": 10000 },
+        "totalVacancies": { "type": "string", "maxLength": 100 },
+        "qualification": { "type": "string", "maxLength": 200 },
+        "ageLimit": { "type": "string", "maxLength": 100 },
+        "startDate": { "type": "string", "maxLength": 50 },
+        "lastDate": { "type": "string", "maxLength": 50 },
+        "examDate": { "type": "string", "maxLength": 50 },
+        "applicationFee": { "type": "string", "maxLength": 200 },
+        "applyOnlineUrl": { "type": "string", "maxLength": 500 },
+        "notificationPdfUrl": { "type": "string", "maxLength": 500 },
+        "officialWebsiteUrl": { "type": "string", "maxLength": 500 },
+        "thumbnailUrl": { "type": "string", "maxLength": 500 },
+        "isFeatured": { "type": "boolean" },
+        "isUrgent": { "type": "boolean" },
+        "authorEmail": { "type": "string", "maxLength": 150 },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["title", "category", "department", "shortDescription", "officialWebsiteUrl"]
+    },
+    "Admin": {
+      "title": "Admin",
+      "description": "Authorized administrator profile",
+      "type": "object",
+      "properties": {
+        "email": { "type": "string", "maxLength": 150 },
+        "role": { "type": "string", "maxLength": 50 },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["email", "role"]
+    }
+  },
+  "firestore": {
+    "/posts/{postId}": {
+      "schema": "Post",
+      "description": "Public government job and scheme posts searchable by all citizens, manageable by admin"
+    },
+    "/admins/{adminId}": {
+      "schema": "Admin",
+      "description": "Admin registry mapping UIDs to roles"
+    }
+  }
+}
