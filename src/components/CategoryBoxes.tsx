@@ -1,12 +1,12 @@
 import React from 'react';
 import {
   Briefcase,
+  Flag,
+  Landmark,
   FileText,
   Trophy,
-  Landmark,
-  Flag,
   KeyRound,
-  BookOpen,
+  Award,
   HelpCircle
 } from 'lucide-react';
 import { PostCategory } from '../types';
@@ -20,102 +20,111 @@ export const CategoryBoxes: React.FC<CategoryBoxesProps> = ({
   onSelectCategory,
   postCounts
 }) => {
+  // 8 Vibrant Category Boxes inspired by Sarkari Result
   const boxes = [
     {
       id: 'latest-jobs' as PostCategory,
-      title: 'नवीनतम नौकरियाँ',
-      subtitle: 'Latest Jobs',
+      title: 'MP Government Jobs',
+      hindiTitle: 'मध्य प्रदेश सरकारी नौकरी',
       icon: Briefcase,
-      color: 'from-blue-600 to-indigo-700',
-      badge: 'MP & केंद्र'
-    },
-    {
-      id: 'mp-schemes' as PostCategory,
-      title: 'MP सरकारी योजनाएँ',
-      subtitle: 'MP Schemes',
-      icon: Landmark,
-      color: 'from-amber-600 to-orange-700',
-      badge: 'लाड़ली बहना/संबल'
+      color: 'bg-[#B91C1C] hover:bg-[#991B1B] border-red-700',
+      badge: 'MPESB/MPPSC'
     },
     {
       id: 'central-schemes' as PostCategory,
-      title: 'केंद्र सरकार योजनाएँ',
-      subtitle: 'Central Schemes',
+      title: 'Central Govt Jobs',
+      hindiTitle: 'केंद्र सरकार नौकरियाँ',
       icon: Flag,
-      color: 'from-orange-600 to-red-600',
-      badge: 'PM किसान/आवास'
+      color: 'bg-[#1D4ED8] hover:bg-[#1E40AF] border-blue-700',
+      badge: 'SSC/Railway'
+    },
+    {
+      id: 'mp-schemes' as PostCategory,
+      title: 'MP Sarkari Yojana',
+      hindiTitle: 'MP सरकारी योजना',
+      icon: Landmark,
+      color: 'bg-[#EA580C] hover:bg-[#C2410C] border-orange-700',
+      badge: 'लाड़ली बहना/संबल'
     },
     {
       id: 'admit-card' as PostCategory,
-      title: 'प्रवेश पत्र (Admit Card)',
-      subtitle: 'Hall Ticket',
+      title: 'Admit Card',
+      hindiTitle: 'प्रवेश पत्र (Admit Card)',
       icon: FileText,
-      color: 'from-purple-600 to-violet-700',
+      color: 'bg-[#7C3AED] hover:bg-[#6D28D9] border-purple-700',
       badge: 'डाउनलोड'
     },
     {
       id: 'results' as PostCategory,
-      title: 'परीक्षा परिणाम',
-      subtitle: 'Exam Results',
+      title: 'Results',
+      hindiTitle: 'परीक्षा परिणाम (Results)',
       icon: Trophy,
-      color: 'from-emerald-600 to-teal-700',
-      badge: 'घोषित परिणाम'
+      color: 'bg-[#059669] hover:bg-[#047857] border-emerald-700',
+      badge: 'घोषित रिजल्ट'
     },
     {
       id: 'answer-key' as PostCategory,
-      title: 'उत्तर कुंजी (Answer Key)',
-      subtitle: 'Model Keys',
+      title: 'Answer Key',
+      hindiTitle: 'उत्तर कुंजी (Answer Key)',
       icon: KeyRound,
-      color: 'from-cyan-600 to-blue-700',
-      badge: 'आपत्ति दर्ज'
+      color: 'bg-[#0284C7] hover:bg-[#0369A1] border-sky-700',
+      badge: 'मॉडल कुंजी'
     },
     {
-      id: 'syllabus' as PostCategory,
-      title: 'परीक्षा पाठ्यक्रम',
-      subtitle: 'Syllabus & Pattern',
-      icon: BookOpen,
-      color: 'from-fuchsia-600 to-pink-700',
-      badge: 'पैटर्न व अंक'
+      id: 'scholarship' as PostCategory,
+      title: 'Scholarship',
+      hindiTitle: 'छात्रवृत्ति (Scholarship)',
+      icon: Award,
+      color: 'bg-[#C026D3] hover:bg-[#A21CAF] border-fuchsia-700',
+      badge: 'मेधावी/पोस्ट मैट्रिक'
     },
     {
       id: 'application-guide' as PostCategory,
-      title: 'फॉर्म एवं आवेदन गाइड',
-      subtitle: 'How to Apply',
+      title: 'Online Forms',
+      hindiTitle: 'ऑनलाइन फॉर्म एवं गाइड',
       icon: HelpCircle,
-      color: 'from-teal-600 to-emerald-800',
-      badge: 'स्टेप-बाय-स्टेप'
+      color: 'bg-[#0F766E] hover:bg-[#115E59] border-teal-700',
+      badge: 'फॉर्म व दिशा-निर्देश'
     }
   ];
 
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2.5 my-5">
-      {boxes.map((box) => {
-        const IconComponent = box.icon;
-        const count = postCounts[box.id] || 0;
-        return (
-          <button
-            key={box.id}
-            onClick={() => onSelectCategory(box.id)}
-            className={`group relative overflow-hidden rounded-xl p-3 text-white text-left transition-all duration-200 transform hover:-translate-y-1 hover:shadow-lg bg-gradient-to-br ${box.color} border border-white/10 cursor-pointer`}
-          >
-            <div className="flex items-center justify-between mb-1.5">
-              <span className="p-1.5 rounded-lg bg-white/20 backdrop-blur-xs group-hover:scale-110 transition-transform">
-                <IconComponent className="w-4 h-4 text-white" />
+    <div className="my-4">
+      <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2">
+        {boxes.map((box) => {
+          const IconComponent = box.icon;
+          const count = postCounts[box.id] || 0;
+          return (
+            <button
+              key={box.id}
+              onClick={() => onSelectCategory(box.id)}
+              className={`group relative rounded-lg p-2.5 sm:p-3 text-white text-center transition-all duration-150 transform hover:-translate-y-0.5 hover:shadow-md ${box.color} border shadow-xs cursor-pointer flex flex-col items-center justify-between min-h-[92px]`}
+            >
+              <div className="flex items-center justify-between w-full mb-1">
+                <span className="p-1 rounded bg-white/20 group-hover:scale-110 transition-transform">
+                  <IconComponent className="w-3.5 h-3.5 text-white" />
+                </span>
+                <span className="text-[10px] font-black bg-white/25 px-1.5 py-0.2 rounded text-white tracking-wide">
+                  {count > 0 ? `${count}+` : 'NEW'}
+                </span>
+              </div>
+
+              <div className="w-full text-center">
+                <h3 className="font-extrabold text-[12px] sm:text-[13px] leading-tight text-white line-clamp-1">
+                  {box.title}
+                </h3>
+                <p className="text-[11px] text-white/90 font-medium truncate mt-0.5">
+                  {box.hindiTitle}
+                </p>
+              </div>
+
+              <span className="text-[9px] text-amber-200 font-bold block mt-1 tracking-tight truncate w-full">
+                {box.badge} &rarr;
               </span>
-              <span className="text-[10px] font-bold bg-white/20 px-1.5 py-0.5 rounded text-white backdrop-blur-xs">
-                {count > 0 ? `${count}+` : box.badge}
-              </span>
-            </div>
-            
-            <h3 className="font-bold text-xs sm:text-sm leading-snug tracking-tight text-white line-clamp-1">
-              {box.title}
-            </h3>
-            <p className="text-[11px] text-white/80 font-medium truncate mt-0.5">
-              {box.subtitle}
-            </p>
-          </button>
-        );
-      })}
+            </button>
+          );
+        })}
+      </div>
     </div>
   );
 };

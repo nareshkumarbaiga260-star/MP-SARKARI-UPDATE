@@ -49,7 +49,7 @@ export const PostCard: React.FC<PostCardProps> = ({ post, onSelect }) => {
   return (
     <div
       onClick={() => onSelect(post)}
-      className="bg-white rounded-xl border border-slate-200 hover:border-amber-400/80 shadow-xs hover:shadow-md transition-all duration-200 cursor-pointer overflow-hidden flex flex-col justify-between group"
+      className="bg-white rounded-xl border border-slate-200 hover:border-red-600/80 shadow-xs hover:shadow-md transition-all duration-150 cursor-pointer overflow-hidden flex flex-col justify-between group"
     >
       <div className="p-4 sm:p-5">
         {/* Top Badges: Category, Department, Urgent/Featured */}
@@ -87,7 +87,7 @@ export const PostCard: React.FC<PostCardProps> = ({ post, onSelect }) => {
         </p>
 
         {/* Post Title */}
-        <h3 className="text-base font-bold text-slate-900 group-hover:text-amber-700 transition leading-snug line-clamp-2 mb-3">
+        <h3 className="text-base font-bold text-slate-900 group-hover:text-red-700 transition leading-snug line-clamp-2 mb-3">
           {post.title}
         </h3>
 
@@ -136,7 +136,7 @@ export const PostCard: React.FC<PostCardProps> = ({ post, onSelect }) => {
           {post.applyOnlineUrl && (
             <button
               onClick={handleApplyClick}
-              className="inline-flex items-center gap-1 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold px-3 py-1.5 rounded-lg text-xs shadow-xs transition cursor-pointer"
+              className="inline-flex items-center gap-1 bg-[#BA0000] hover:bg-[#991B1B] text-white font-bold px-3 py-1.5 rounded-lg text-xs shadow-xs transition cursor-pointer"
             >
               <ExternalLink className="w-3.5 h-3.5" />
               <span>ऑनलाइन आवेदन</span>
@@ -155,7 +155,7 @@ export const PostCard: React.FC<PostCardProps> = ({ post, onSelect }) => {
           )}
         </div>
 
-        <span className="text-xs font-semibold text-amber-700 group-hover:translate-x-1 transition-transform flex items-center gap-0.5">
+        <span className="text-xs font-semibold text-red-700 group-hover:translate-x-1 transition-transform flex items-center gap-0.5">
           पूर्ण विवरण <ChevronRight className="w-3.5 h-3.5" />
         </span>
       </div>

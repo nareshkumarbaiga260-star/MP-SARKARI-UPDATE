@@ -15,22 +15,126 @@ import {
   CheckCircle,
   HelpCircle
 } from 'lucide-react';
-import { Post, PostCategory, FilterState } from './types';
+import { Post, PostCategory, FilterState, ApprovedNotification } from './types';
 import { CATEGORIES, DEPARTMENT_LIST, QUALIFICATION_LIST } from './data/categories';
 import { INITIAL_GOVT_POSTS } from './data/seedData';
 import { postService } from './services/postService';
+import { notificationService } from './services/notificationService';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { Header } from './components/Header';
 import { CategoryBoxes } from './components/CategoryBoxes';
 import { SearchBar } from './components/SearchBar';
 import { UpcomingDeadlines } from './components/UpcomingDeadlines';
 import { SchemeHighlights } from './components/SchemeHighlights';
+import { SarkariThreeColumnGrid } from './components/SarkariThreeColumnGrid';
+import { SarkariSecondaryGrid } from './components/SarkariSecondaryGrid';
 import { PostCard } from './components/PostCard';
 import { PostDetailModal } from './components/PostDetailModal';
 import { AdminPanel } from './components/AdminPanel';
-import { PasswordResetModal } from './components/PasswordResetModal';
+import { ResetPasswordPage } from './components/ResetPasswordPage';
+import { OnlineToolsSection } from './components/OnlineToolsSection';
+import { OnlineToolsPage } from './components/OnlineToolsPage';
+import { PassportPhotoMaker } from './components/PassportPhotoMaker';
+import { AgeCalculatorTool } from './components/tools/AgeCalculatorTool';
+import { AadhaarPrintTool } from './components/tools/AadhaarPrintTool';
+import { ImageCompressorTool } from './components/tools/ImageCompressorTool';
+import { SignatureCleanerTool } from './components/tools/SignatureCleanerTool';
+import { ImageToPdfTool } from './components/tools/ImageToPdfTool';
+import { PdfMergerTool } from './components/tools/PdfMergerTool';
+import { GovtFormToolsPage } from './components/tools/GovtFormToolsPage';
+import { ONLINE_TOOLS, ToolCategoryId, ToolId } from './data/onlineTools';
+import { PaperLayout, CopyCount } from './utils/passportExport';
 import { Footer } from './components/Footer';
 import { InfoModals, InfoModalType } from './components/InfoModals';
+import { NotificationAlertsBar } from './components/NotificationAlertsBar';
+import { ApprovedNotificationsSection } from './components/ApprovedNotificationsSection';
+
+type OnlineToolsRouteState =
+  | { view: 'hub' }
+  | { view: 'tool'; toolId: ToolId }
+  | null;
+
+function parseOnlineToolsRoute(pathname: string): OnlineToolsRouteState {
+  const clean = pathname.replace(/\/+$/, '') || '/';
+  if (clean === '/online-tools') {
+    return { view: 'hub' };
+  }
+  if (clean === '/passport-photo-maker') {
+    return { view: 'tool', toolId: 'passport-photo-maker' };
+  }
+  if (clean.startsWith('/online-tools/')) {
+    const slug = clean.slice('/online-tools/'.length);
+    const matched = ONLINE_TOOLS.find((t) => t.id === slug);
+    if (matched) {
+      return { view: 'tool', toolId: matched.id };
+    }
+    return { view: 'hub' };
+  }
+  return null;
+}
+
+interface AuthActionRouteState {
+  isResetRoute: boolean;
+  mode: string | null;
+  oobCode: string | null;
+  apiKey: string | null;
+  continueUrl: string | null;
+}
+
+function parseAuthActionFromLocation(): AuthActionRouteState {
+  try {
+    const pathname = window.location.pathname || '/';
+    const searchParams = new URLSearchParams(window.location.search);
+
+    const rawHash = window.location.hash.startsWith('#') ? window.location.hash.slice(1) : window.location.hash;
+    const hashQuery = rawHash.includes('?') ? rawHash.slice(rawHash.indexOf('?') + 1) : rawHash;
+    const hashParams = new URLSearchParams(hashQuery);
+
+    let mode = searchParams.get('mode') || hashParams.get('mode');
+    let oobCode = searchParams.get('oobCode') || hashParams.get('oobCode');
+    let apiKey = searchParams.get('apiKey') || hashParams.get('apiKey');
+    const continueUrl = searchParams.get('continueUrl') || hashParams.get('continueUrl');
+
+    // If Firebase redirected through continueUrl with nested parameters, inspect it safely
+    if ((!mode || !oobCode) && continueUrl) {
+      try {
+        const nested = new URL(continueUrl, window.location.origin);
+        mode = mode || nested.searchParams.get('mode');
+        oobCode = oobCode || nested.searchParams.get('oobCode');
+        apiKey = apiKey || nested.searchParams.get('apiKey');
+      } catch {
+        // Ignore malformed continueUrl
+      }
+    }
+
+    const isPathReset =
+      pathname === '/reset-password' ||
+      pathname.startsWith('/reset-password/') ||
+      pathname === '/__/auth/action';
+
+    const isResetRoute =
+      isPathReset ||
+      mode === 'resetPassword' ||
+      Boolean(oobCode && (!mode || mode === 'resetPassword'));
+
+    return {
+      isResetRoute,
+      mode,
+      oobCode,
+      apiKey,
+      continueUrl
+    };
+  } catch (e) {
+    console.warn('URL parsing for auth action code:', e);
+    return {
+      isResetRoute: false,
+      mode: null,
+      oobCode: null,
+      apiKey: null,
+      continueUrl: null
+    };
+  }
+}
 
 const initialFilters: FilterState = {
   searchQuery: '',
@@ -41,44 +145,40 @@ const initialFilters: FilterState = {
 
 function MainApp() {
   const [posts, setPosts] = useState<Post[]>([]);
+  const [approvedNotifications, setApprovedNotifications] = useState<ApprovedNotification[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [currentCategory, setCurrentCategory] = useState<PostCategory>('all');
   const [filters, setFilters] = useState<FilterState>(initialFilters);
   const [viewMode, setViewMode] = useState<'grid' | 'table'>('grid');
   
-  // Modals state
+  // Modals & custom password reset page / online tools state
   const [selectedPost, setSelectedPost] = useState<Post | null>(null);
   const [isAdminOpen, setIsAdminOpen] = useState<boolean>(false);
   const [infoModalType, setInfoModalType] = useState<InfoModalType>(null);
-  const [isResetModalOpen, setIsResetModalOpen] = useState<boolean>(false);
-  const [resetActionCode, setResetActionCode] = useState<string | null>(null);
-  
+  const [authActionRoute, setAuthActionRoute] = useState<AuthActionRouteState>(() =>
+    parseAuthActionFromLocation()
+  );
+  const [toolsRoute, setToolsRoute] = useState<OnlineToolsRouteState>(() =>
+    parseOnlineToolsRoute(window.location.pathname)
+  );
+  const [toolsInitialCategory, setToolsInitialCategory] = useState<ToolCategoryId>('all');
+  const [toolPreset, setToolPreset] = useState<{ paperLayout: PaperLayout; copies: CopyCount }>({
+    paperLayout: '4x6',
+    copies: 6
+  });
+
   const searchInputRef = useRef<HTMLDivElement>(null);
 
   const { isAdmin } = useAuth();
 
-  // Detect Firebase action parameters (mode & oobCode) from Gmail reset links
+  // Keep password reset page & tool routes synchronized with browser navigation
   useEffect(() => {
-    try {
-      const searchParams = new URLSearchParams(window.location.search);
-      let mode = searchParams.get('mode');
-      let oobCode = searchParams.get('oobCode');
-
-      // Fallback check hash fragment if not present in search query
-      if ((!mode || !oobCode) && window.location.hash.includes('mode=')) {
-        const hashQuery = window.location.hash.substring(1);
-        const hashParams = new URLSearchParams(hashQuery);
-        mode = mode || hashParams.get('mode');
-        oobCode = oobCode || hashParams.get('oobCode');
-      }
-
-      if (mode === 'resetPassword' && oobCode) {
-        setResetActionCode(oobCode);
-        setIsResetModalOpen(true);
-      }
-    } catch (e) {
-      console.warn('URL parsing for auth action code:', e);
-    }
+    const syncFromUrl = () => {
+      setAuthActionRoute(parseAuthActionFromLocation());
+      setToolsRoute(parseOnlineToolsRoute(window.location.pathname));
+    };
+    window.addEventListener('popstate', syncFromUrl);
+    return () => window.removeEventListener('popstate', syncFromUrl);
   }, []);
 
   // Subscribe to real-time posts from Firestore
@@ -119,6 +219,66 @@ function MainApp() {
       unsubscribe();
     };
   }, []);
+
+  // Subscribe to admin-approved official notifications from Firestore + backend fallback
+  useEffect(() => {
+    let isMounted = true;
+    const unsubscribe = notificationService.subscribeApprovedNotifications(
+      async (items) => {
+        if (!isMounted) return;
+        if (items.length > 0) {
+          setApprovedNotifications(items);
+        } else {
+          const backendApproved = await notificationService.fetchPublicApprovedFromBackend();
+          if (isMounted && backendApproved.length > 0) {
+            setApprovedNotifications(backendApproved);
+          } else if (isMounted) {
+            setApprovedNotifications([]);
+          }
+        }
+      },
+      async () => {
+        const backendApproved = await notificationService.fetchPublicApprovedFromBackend();
+        if (isMounted) {
+          setApprovedNotifications(backendApproved);
+        }
+      }
+    );
+
+    return () => {
+      isMounted = false;
+      unsubscribe();
+    };
+  }, []);
+
+  const openApprovedNotificationInModal = (item: ApprovedNotification) => {
+    if (item.linkedPostId) {
+      const matched = posts.find((p) => p.id === item.linkedPostId);
+      if (matched) {
+        setSelectedPost(matched);
+        return;
+      }
+    }
+    const syntheticPost: Post = {
+      id: item.linkedPostId || item.id,
+      title: item.title,
+      category: item.websiteCategory || 'govt-updates',
+      department: item.department || item.sourceName,
+      shortDescription:
+        item.description ||
+        `${item.department} द्वारा जारी आधिकारिक अधिसूचना${item.notificationNumber ? ` (क्रमांक: ${item.notificationNumber})` : ''}।`,
+      fullDescription: `${item.description || item.title}\n\nविभाग: ${item.department}\nस्रोत: ${item.sourceName}${item.notificationNumber ? `\nअधिसूचना क्रमांक: ${item.notificationNumber}` : ''}${item.publishedDate ? `\nप्रकाशन तिथि: ${item.publishedDate}` : ''}${item.lastDate ? `\nअंतिम तिथि: ${item.lastDate}` : ''}`,
+      startDate: item.publishedDate || '',
+      lastDate: item.lastDate || '',
+      applyOnlineUrl: item.applyOnlineUrl || item.officialSourceUrl,
+      notificationPdfUrl: item.pdfUrl || '',
+      officialWebsiteUrl: item.officialSourceUrl,
+      authorEmail: item.approvedBy || 'NARESHKUMARBAIGA260@GMAIL.COM',
+      createdAt: item.approvedAt,
+      updatedAt: item.approvedAt
+    };
+    setSelectedPost(syntheticPost);
+  };
 
   // Compute counts per category for the 8-box grid
   const postCounts = useMemo(() => {
@@ -181,6 +341,142 @@ function MainApp() {
 
   const currentCategoryMeta = CATEGORIES.find((c) => c.id === currentCategory) || CATEGORIES[0];
 
+  const closeResetPageToHome = () => {
+    if (window.history.replaceState) {
+      window.history.replaceState({}, document.title, '/');
+    }
+    setAuthActionRoute({
+      isResetRoute: false,
+      mode: null,
+      oobCode: null,
+      apiKey: null,
+      continueUrl: null
+    });
+  };
+
+  if (authActionRoute.isResetRoute) {
+    return (
+      <ResetPasswordPage
+        oobCode={authActionRoute.oobCode}
+        apiKey={authActionRoute.apiKey}
+        continueUrl={authActionRoute.continueUrl}
+        mode={authActionRoute.mode}
+        onBackToHome={closeResetPageToHome}
+        onGoToAdminLogin={() => {
+          closeResetPageToHome();
+          setIsAdminOpen(true);
+        }}
+      />
+    );
+  }
+
+  const openOnlineToolsHub = (category: ToolCategoryId = 'all') => {
+    setToolsInitialCategory(category);
+    if (window.history.pushState && window.location.pathname !== '/online-tools') {
+      window.history.pushState({}, document.title, '/online-tools');
+    }
+    setToolsRoute({ view: 'hub' });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const openSpecificTool = (
+    toolId: ToolId,
+    preset?: { paperLayout: PaperLayout; copies: CopyCount }
+  ) => {
+    if (preset) {
+      setToolPreset(preset);
+    }
+    const targetPath = `/online-tools/${toolId}`;
+    if (window.history.pushState && window.location.pathname !== targetPath) {
+      window.history.pushState({}, document.title, targetPath);
+    }
+    setToolsRoute({ view: 'tool', toolId });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const closeToolsToHome = () => {
+    if (window.history.pushState && window.location.pathname !== '/') {
+      window.history.pushState({}, document.title, '/');
+    }
+    setToolsRoute(null);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  if (toolsRoute?.view === 'hub') {
+    return (
+      <OnlineToolsPage
+        initialCategory={toolsInitialCategory}
+        onSelectTool={(toolId) => openSpecificTool(toolId)}
+        onBackToHome={closeToolsToHome}
+      />
+    );
+  }
+
+  if (toolsRoute?.view === 'tool') {
+    const backToTools = () => openOnlineToolsHub(toolsInitialCategory);
+    switch (toolsRoute.toolId) {
+      case 'passport-photo-maker':
+        return (
+          <PassportPhotoMaker
+            initialPaperLayout={toolPreset.paperLayout}
+            initialCopies={toolPreset.copies}
+            onBackToTools={backToTools}
+            onBackToPortal={closeToolsToHome}
+          />
+        );
+      case 'aadhaar-print':
+        return (
+          <AadhaarPrintTool
+            onBackToTools={backToTools}
+            onBackToPortal={closeToolsToHome}
+          />
+        );
+      case 'age-calculator':
+        return (
+          <AgeCalculatorTool
+            onBackToTools={backToTools}
+            onBackToPortal={closeToolsToHome}
+          />
+        );
+      case 'image-compressor':
+        return (
+          <ImageCompressorTool
+            onBackToTools={backToTools}
+            onBackToPortal={closeToolsToHome}
+          />
+        );
+      case 'signature-cleaner':
+        return (
+          <SignatureCleanerTool
+            onBackToTools={backToTools}
+            onBackToPortal={closeToolsToHome}
+          />
+        );
+      case 'image-to-pdf':
+        return (
+          <ImageToPdfTool
+            onBackToTools={backToTools}
+            onBackToPortal={closeToolsToHome}
+          />
+        );
+      case 'pdf-merger':
+        return (
+          <PdfMergerTool
+            onBackToTools={backToTools}
+            onBackToPortal={closeToolsToHome}
+          />
+        );
+      case 'govt-form-tools':
+        return (
+          <GovtFormToolsPage
+            onBackToTools={backToTools}
+            onBackToPortal={closeToolsToHome}
+            onSelectTool={(id) => openSpecificTool(id)}
+          />
+        );
+    }
+  }
+
   return (
     <div className="min-h-screen flex flex-col bg-slate-50 text-slate-900 font-sans">
       {/* Header */}
@@ -191,11 +487,20 @@ function MainApp() {
         onOpenSearch={() => {
           searchInputRef.current?.scrollIntoView({ behavior: 'smooth' });
         }}
+        onOpenOnlineTools={() => openOnlineToolsHub('all')}
+        isOnlineToolsActive={toolsRoute !== null}
       />
 
       {/* Main Content Area */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 py-6">
-        
+        {/* Live Official Notification Alerts Bar & Drawer */}
+        <NotificationAlertsBar
+          approvedNotifications={approvedNotifications}
+          recentPosts={posts}
+          onOpenNotificationAsPost={openApprovedNotificationInModal}
+          onSelectPost={setSelectedPost}
+        />
+
         {/* Sarkari 8-Box Highlights Grid */}
         <CategoryBoxes
           onSelectCategory={handleSelectCategory}
@@ -218,7 +523,39 @@ function MainApp() {
           onSelectPost={setSelectedPost}
         />
 
-        {/* Popular Government Schemes Spotlight (shown on 'all' or 'schemes' view) */}
+        {/* 4. MAIN THREE-COLUMN SARKARI HOMEPAGE GRID (Results | Admit Card | Latest Jobs) */}
+        {currentCategory === 'all' && !filters.searchQuery && (
+          <SarkariThreeColumnGrid
+            posts={posts}
+            onSelectPost={setSelectedPost}
+            onSelectCategory={handleSelectCategory}
+          />
+        )}
+
+        {/* Admin-Approved Official Notifications Showcase */}
+        {currentCategory === 'all' && !filters.searchQuery && approvedNotifications.length > 0 && (
+          <ApprovedNotificationsSection
+            notifications={approvedNotifications}
+            onReadMore={openApprovedNotificationInModal}
+          />
+        )}
+
+        {/* MP SARKARI UPDATE Online Tools Section (All 6 Categories + Clickable Tool Cards) */}
+        <OnlineToolsSection
+          onOpenOnlineTools={openOnlineToolsHub}
+          onSelectTool={(toolId) => openSpecificTool(toolId)}
+        />
+
+        {/* 5. SECONDARY THREE-COLUMN GRID (Answer Key | Syllabus | Admission/Scholarship) */}
+        {currentCategory === 'all' && !filters.searchQuery && (
+          <SarkariSecondaryGrid
+            posts={posts}
+            onSelectPost={setSelectedPost}
+            onSelectCategory={handleSelectCategory}
+          />
+        )}
+
+        {/* 6. Popular Government Schemes Spotlight (shown on 'all' or 'schemes' view) */}
         {(currentCategory === 'all' || currentCategory === 'mp-schemes' || currentCategory === 'central-schemes') && (
           <SchemeHighlights
             posts={posts}
@@ -228,47 +565,58 @@ function MainApp() {
         )}
 
         {/* Posts Feed Header */}
-        <div className="flex flex-wrap items-center justify-between gap-3 mb-5 border-b border-slate-200 pb-3">
+        <div className="flex flex-wrap items-center justify-between gap-3 mb-5 border-b-2 border-red-700 pb-3 pt-4">
           <div>
             <div className="flex items-center gap-2">
               <h2 className="text-lg sm:text-xl font-black text-slate-900 tracking-tight">
-                {currentCategoryMeta.nameHindi}
+                {currentCategory === 'all' ? 'नवीनतम सरकारी भर्तियाँ एवं सूचनाएँ (All Updates)' : currentCategoryMeta.nameHindi}
               </h2>
-              <span className="bg-amber-100 text-amber-800 text-xs font-bold px-2 py-0.5 rounded-full border border-amber-300">
+              <span className="bg-red-100 text-red-800 text-xs font-bold px-2.5 py-0.5 rounded-full border border-red-300">
                 {filteredPosts.length} सूचनाएँ उपलब्ध
               </span>
             </div>
-            <p className="text-xs text-slate-500 mt-0.5">
+            <p className="text-xs text-slate-600 mt-0.5">
               {currentCategoryMeta.descriptionHindi}
             </p>
           </div>
 
-          {/* View mode toggle: Grid vs Table */}
-          <div className="flex items-center gap-1 bg-white p-1 rounded-lg border border-slate-200 shadow-2xs">
-            <button
-              onClick={() => setViewMode('grid')}
-              className={`p-1.5 rounded text-xs font-semibold flex items-center gap-1 transition cursor-pointer ${
-                viewMode === 'grid'
-                  ? 'bg-amber-500 text-slate-950 shadow-2xs'
-                  : 'text-slate-600 hover:text-slate-900'
-              }`}
-              title="कार्ड ग्रिड दृश्य"
-            >
-              <Grid className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">कार्ड दृश्य</span>
-            </button>
-            <button
-              onClick={() => setViewMode('table')}
-              className={`p-1.5 rounded text-xs font-semibold flex items-center gap-1 transition cursor-pointer ${
-                viewMode === 'table'
-                  ? 'bg-amber-500 text-slate-950 shadow-2xs'
-                  : 'text-slate-600 hover:text-slate-900'
-              }`}
-              title="तालिका दृश्य"
-            >
-              <List className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">तालिका दृश्य</span>
-            </button>
+          <div className="flex items-center gap-2">
+            {currentCategory !== 'all' && (
+              <button
+                onClick={() => handleSelectCategory('all')}
+                className="text-xs text-red-700 hover:text-red-900 font-bold bg-red-50 border border-red-200 px-3 py-1.5 rounded-lg transition cursor-pointer"
+              >
+                ← वापस होमपेज (Back to Home)
+              </button>
+            )}
+
+            {/* View mode toggle: Grid vs Table */}
+            <div className="flex items-center gap-1 bg-white p-1 rounded-lg border border-slate-200 shadow-2xs">
+              <button
+                onClick={() => setViewMode('grid')}
+                className={`p-1.5 rounded text-xs font-semibold flex items-center gap-1 transition cursor-pointer ${
+                  viewMode === 'grid'
+                    ? 'bg-[#BA0000] text-white shadow-2xs'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+                title="कार्ड ग्रिड दृश्य"
+              >
+                <Grid className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">कार्ड दृश्य</span>
+              </button>
+              <button
+                onClick={() => setViewMode('table')}
+                className={`p-1.5 rounded text-xs font-semibold flex items-center gap-1 transition cursor-pointer ${
+                  viewMode === 'table'
+                    ? 'bg-[#BA0000] text-white shadow-2xs'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+                title="तालिका दृश्य"
+              >
+                <List className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">तालिका दृश्य</span>
+              </button>
+            </div>
           </div>
         </div>
 
@@ -313,7 +661,7 @@ function MainApp() {
           /* 2. Compact Sarkari Table View */
           <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-x-auto">
             <table className="w-full text-left text-xs text-slate-700">
-              <thead className="bg-[#0B192C] text-white font-bold text-xs uppercase tracking-wider">
+              <thead className="bg-[#001F3F] text-white font-bold text-xs uppercase tracking-wider">
                 <tr>
                   <th className="p-3.5">भर्ती / योजना का नाम</th>
                   <th className="p-3.5">विभाग</th>
@@ -328,9 +676,9 @@ function MainApp() {
                   <tr
                     key={post.id}
                     onClick={() => setSelectedPost(post)}
-                    className="hover:bg-amber-50/50 transition cursor-pointer group"
+                    className="hover:bg-red-50/40 transition cursor-pointer group"
                   >
-                    <td className="p-3.5 font-bold text-slate-900 group-hover:text-amber-700 transition max-w-[340px]">
+                    <td className="p-3.5 font-bold text-slate-900 group-hover:text-red-700 transition max-w-[340px]">
                       <div className="line-clamp-2">{post.title}</div>
                       <span className="text-[10px] text-slate-400 font-normal block mt-0.5">
                         {CATEGORIES.find((c) => c.id === post.category)?.nameHindi}
@@ -354,7 +702,7 @@ function MainApp() {
                           e.stopPropagation();
                           setSelectedPost(post);
                         }}
-                        className="bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold px-3 py-1.5 rounded-lg text-xs shadow-2xs transition"
+                        className="bg-[#BA0000] hover:bg-red-800 text-white font-bold px-3 py-1.5 rounded-lg text-xs shadow-2xs transition cursor-pointer"
                       >
                         विवरण व फॉर्म &rarr;
                       </button>
@@ -410,6 +758,8 @@ function MainApp() {
         onSelectCategory={handleSelectCategory}
         onOpenModal={(type) => setInfoModalType(type)}
         onOpenAdmin={() => setIsAdminOpen(true)}
+        onOpenOnlineTools={() => openOnlineToolsHub('all')}
+        onOpenPassportMaker={() => openSpecificTool('passport-photo-maker')}
       />
 
       {/* Post Detail Modal */}
@@ -428,21 +778,16 @@ function MainApp() {
         }}
         onOpenPasswordReset={() => {
           setIsAdminOpen(false);
-          setIsResetModalOpen(true);
-        }}
-      />
-
-      {/* Password Reset Modal */}
-      <PasswordResetModal
-        isOpen={isResetModalOpen}
-        initialCode={resetActionCode}
-        onClose={() => {
-          setIsResetModalOpen(false);
-          setResetActionCode(null);
-        }}
-        onOpenAdminLogin={() => {
-          setIsResetModalOpen(false);
-          setIsAdminOpen(true);
+          if (window.history.pushState) {
+            window.history.pushState({}, document.title, '/reset-password');
+          }
+          setAuthActionRoute({
+            isResetRoute: true,
+            mode: 'resetPassword',
+            oobCode: null,
+            apiKey: null,
+            continueUrl: null
+          });
         }}
       />
 

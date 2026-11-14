@@ -24,8 +24,8 @@
         "isFeatured": { "type": "boolean" },
         "isUrgent": { "type": "boolean" },
         "authorEmail": { "type": "string", "maxLength": 150 },
-        "createdAt": { "type": "string", "format": "date-time" },
-        "updatedAt": { "type": "string", "format": "date-time" }
+        "createdAt": { "type": "string", "format": "date-time", "maxLength": 64 },
+        "updatedAt": { "type": "string", "format": "date-time", "maxLength": 64 }
       },
       "required": ["title", "category", "department", "shortDescription", "officialWebsiteUrl"]
     },
@@ -36,9 +36,119 @@
       "properties": {
         "email": { "type": "string", "maxLength": 150 },
         "role": { "type": "string", "maxLength": 50 },
-        "createdAt": { "type": "string", "format": "date-time" }
+        "createdAt": { "type": "string", "format": "date-time", "maxLength": 64 }
       },
       "required": ["email", "role"]
+    },
+    "GovernmentSource": {
+      "title": "GovernmentSource",
+      "description": "Configured official Indian government website, RSS feed, sitemap, or API source",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string", "maxLength": 150 },
+        "department": { "type": "string", "maxLength": 200 },
+        "url": { "type": "string", "maxLength": 500 },
+        "alternateUrl": { "type": "string", "maxLength": 500 },
+        "portalHomeUrl": { "type": "string", "maxLength": 500 },
+        "method": { "type": "string", "enum": ["auto", "rss", "sitemap", "api", "html", "pdf"], "maxLength": 20 },
+        "region": { "type": "string", "enum": ["MP", "Central", "State"], "maxLength": 20 },
+        "defaultAutoCategory": { "type": "string", "maxLength": 60 },
+        "enabled": { "type": "boolean" },
+        "isDefault": { "type": "boolean" },
+        "connectionStatus": {
+          "type": "string",
+          "enum": ["connected", "manual_config_needed", "blocked_by_robots", "failed", "pending"],
+          "maxLength": 40
+        },
+        "failureReason": { "type": "string", "maxLength": 40 },
+        "statusMessage": { "type": "string", "maxLength": 500 },
+        "lastErrorDetail": { "type": "string", "maxLength": 500 },
+        "lastCheckedAt": { "type": "string", "maxLength": 64 },
+        "lastSuccessfulCheckAt": { "type": "string", "maxLength": 64 },
+        "lastHttpStatus": { "type": "number" },
+        "lastLatencyMs": { "type": "number" },
+        "retryCount": { "type": "number" },
+        "itemsDetectedLastRun": { "type": "number" },
+        "robotsAllowed": { "type": "boolean" },
+        "manualNotes": { "type": "string", "maxLength": 500 },
+        "createdAt": { "type": "string", "format": "date-time", "maxLength": 64 },
+        "updatedAt": { "type": "string", "format": "date-time", "maxLength": 64 }
+      },
+      "required": ["name", "department", "url", "method", "region", "enabled"]
+    },
+    "DetectedNotification": {
+      "title": "DetectedNotification",
+      "description": "Newly detected raw government notification awaiting admin verification and approval",
+      "type": "object",
+      "properties": {
+        "fingerprint": { "type": "string", "maxLength": 128 },
+        "sourceId": { "type": "string", "maxLength": 128 },
+        "sourceName": { "type": "string", "maxLength": 150 },
+        "department": { "type": "string", "maxLength": 200 },
+        "title": { "type": "string", "maxLength": 400 },
+        "description": { "type": "string", "maxLength": 2000 },
+        "autoCategory": { "type": "string", "maxLength": 60 },
+        "websiteCategory": { "type": "string", "maxLength": 50 },
+        "publishedDate": { "type": "string", "maxLength": 64 },
+        "lastDate": { "type": "string", "maxLength": 64 },
+        "notificationNumber": { "type": "string", "maxLength": 150 },
+        "officialSourceUrl": { "type": "string", "maxLength": 600 },
+        "pdfUrl": { "type": "string", "maxLength": 600 },
+        "applyOnlineUrl": { "type": "string", "maxLength": 600 },
+        "status": { "type": "string", "enum": ["pending", "approved", "rejected"], "maxLength": 20 },
+        "detectedAt": { "type": "string", "format": "date-time", "maxLength": 64 },
+        "reviewedAt": { "type": "string", "maxLength": 64 },
+        "reviewedBy": { "type": "string", "maxLength": 150 },
+        "publishedPostId": { "type": "string", "maxLength": 128 }
+      },
+      "required": ["fingerprint", "sourceId", "department", "title", "autoCategory", "websiteCategory", "officialSourceUrl", "status", "detectedAt"]
+    },
+    "ApprovedNotification": {
+      "title": "ApprovedNotification",
+      "description": "Admin-verified and published official government notification visible to portal visitors",
+      "type": "object",
+      "properties": {
+        "detectedId": { "type": "string", "maxLength": 128 },
+        "fingerprint": { "type": "string", "maxLength": 128 },
+        "sourceId": { "type": "string", "maxLength": 128 },
+        "sourceName": { "type": "string", "maxLength": 150 },
+        "department": { "type": "string", "maxLength": 200 },
+        "title": { "type": "string", "maxLength": 400 },
+        "description": { "type": "string", "maxLength": 2000 },
+        "autoCategory": { "type": "string", "maxLength": 60 },
+        "websiteCategory": { "type": "string", "maxLength": 50 },
+        "publishedDate": { "type": "string", "maxLength": 64 },
+        "lastDate": { "type": "string", "maxLength": 64 },
+        "notificationNumber": { "type": "string", "maxLength": 150 },
+        "officialSourceUrl": { "type": "string", "maxLength": 600 },
+        "pdfUrl": { "type": "string", "maxLength": 600 },
+        "applyOnlineUrl": { "type": "string", "maxLength": 600 },
+        "approvedBy": { "type": "string", "maxLength": 150 },
+        "approvedAt": { "type": "string", "format": "date-time", "maxLength": 64 },
+        "linkedPostId": { "type": "string", "maxLength": 128 }
+      },
+      "required": ["title", "department", "autoCategory", "websiteCategory", "officialSourceUrl", "approvedBy", "approvedAt"]
+    },
+    "MonitoringLog": {
+      "title": "MonitoringLog",
+      "description": "Audit log of scheduled or manual backend monitoring checks",
+      "type": "object",
+      "properties": {
+        "runType": { "type": "string", "enum": ["scheduled", "manual", "alert"], "maxLength": 20 },
+        "sourceId": { "type": "string", "maxLength": 128 },
+        "sourceName": { "type": "string", "maxLength": 150 },
+        "status": {
+          "type": "string",
+          "enum": ["connected", "manual_config_needed", "blocked_by_robots", "failed", "info"],
+          "maxLength": 40
+        },
+        "message": { "type": "string", "maxLength": 600 },
+        "newCount": { "type": "number" },
+        "duplicateCount": { "type": "number" },
+        "failedCount": { "type": "number" },
+        "checkedAt": { "type": "string", "format": "date-time", "maxLength": 64 }
+      },
+      "required": ["runType", "status", "message", "checkedAt"]
     }
   },
   "firestore": {
@@ -49,6 +159,22 @@
     "/admins/{adminId}": {
       "schema": "Admin",
       "description": "Admin registry mapping UIDs to roles"
+    },
+    "/government_sources/{sourceId}": {
+      "schema": "GovernmentSource",
+      "description": "Configured official government portals, RSS feeds, and sitemaps monitored every 30 minutes"
+    },
+    "/detected_notifications/{notificationId}": {
+      "schema": "DetectedNotification",
+      "description": "Admin-only approval queue of detected notifications prior to public publishing"
+    },
+    "/approved_notifications/{notificationId}": {
+      "schema": "ApprovedNotification",
+      "description": "Admin-verified official government notifications published to website visitors"
+    },
+    "/monitoring_logs/{logId}": {
+      "schema": "MonitoringLog",
+      "description": "Admin-only execution logs for source health, duplicates, and failed checks"
     }
   }
 }

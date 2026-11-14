@@ -80,6 +80,22 @@ export const CATEGORIES: CategoryMeta[] = [
     icon: 'BellRing',
     badgeColor: 'bg-rose-50 text-rose-700 border-rose-200',
     descriptionHindi: 'मंत्रालय आदेश, आरक्षण नियम, आयु सीमा छूट एवं प्रेस विज्ञप्ति'
+  },
+  {
+    id: 'admission',
+    nameHindi: 'प्रवेश एवं एडमिशन (Admission)',
+    nameEnglish: 'Admission',
+    icon: 'GraduationCap',
+    badgeColor: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+    descriptionHindi: 'विभिन्न विश्वविद्यालयों, ITI एवं पॉलीटेक्निक प्रवेश सूचनाएँ'
+  },
+  {
+    id: 'scholarship',
+    nameHindi: 'छात्रवृत्ति (Scholarship)',
+    nameEnglish: 'Scholarship',
+    icon: 'Award',
+    badgeColor: 'bg-amber-50 text-amber-700 border-amber-200',
+    descriptionHindi: 'मेधावी विद्यार्थी, पोस्ट मैट्रिक एवं राज्य छात्रवृत्ति योजनाएँ'
   }
 ];
 

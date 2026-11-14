@@ -20,12 +20,17 @@ import {
   Lock,
   Eye,
   EyeOff,
-  UserCheck
+  UserCheck,
+  ShieldCheck,
+  Radio
 } from 'lucide-react';
+import { sendEmailVerification } from 'firebase/auth';
 import { Post, PostCategory } from '../types';
 import { CATEGORIES } from '../data/categories';
 import { postService } from '../services/postService';
 import { useAuth, AUTHORIZED_ADMIN_EMAIL } from '../context/AuthContext';
+import { PasswordStrengthMeter, evaluatePasswordStrength } from './PasswordStrengthMeter';
+import { AutomaticNotificationsPanel } from './AutomaticNotificationsPanel';
 
 interface AdminPanelProps {
   isOpen: boolean;
@@ -48,6 +53,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     signInWithGoogle,
     signInWithCredentials,
     sendPasswordReset,
+    updateAdminPassword,
     signOut,
     authError,
     authSuccess,
@@ -55,7 +61,10 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     clearSuccess
   } = useAuth();
 
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'create' | 'manage'>('dashboard');
+  const [activeTab, setActiveTab] = useState<
+    'dashboard' | 'auto-notifications' | 'create' | 'manage' | 'security'
+  >('dashboard');
+  const [isSendingVerification, setIsSendingVerification] = useState(false);
   const [editingPostId, setEditingPostId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -66,6 +75,16 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   const [passwordInput, setPasswordInput] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isResettingPassword, setIsResettingPassword] = useState(false);
+
+  // Update password form state (authenticated admin)
+  const [currentPasswordInput, setCurrentPasswordInput] = useState('');
+  const [newAdminPassword, setNewAdminPassword] = useState('');
+  const [confirmNewAdminPassword, setConfirmNewAdminPassword] = useState('');
+  const [showCurrentAdminPwd, setShowCurrentAdminPwd] = useState(false);
+  const [showNewAdminPwd, setShowNewAdminPwd] = useState(false);
+  const [showConfirmNewAdminPwd, setShowConfirmNewAdminPwd] = useState(false);
+  const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
+  const [passwordUpdateError, setPasswordUpdateError] = useState<string | null>(null);
 
   // Form State
   const initialFormState: Omit<Post, 'id' | 'createdAt' | 'updatedAt'> = {
@@ -127,6 +146,73 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
       // Error handled by AuthContext
     } finally {
       setIsResettingPassword(false);
+    }
+  };
+
+  const handleSendVerificationEmail = async () => {
+    if (!user) return;
+    setIsSendingVerification(true);
+    try {
+      await sendEmailVerification(user);
+      showNotification('success', `ईमेल सत्यापन लिंक ${user.email} पर भेजा गया है। कृपया इनबॉक्स जाँचें।`);
+    } catch (err: unknown) {
+      showNotification(
+        'error',
+        'ईमेल सत्यापन लिंक भेजने में त्रुटि: ' + (err instanceof Error ? err.message : '')
+      );
+    } finally {
+      setIsSendingVerification(false);
+    }
+  };
+
+  // Real-time password strength for Update Password tab
+  const hasPasswordProvider = Boolean(
+    user?.providerData?.some((provider) => provider.providerId === 'password')
+  );
+  const adminPasswordStrength = evaluatePasswordStrength(newAdminPassword, AUTHORIZED_ADMIN_EMAIL);
+  const isNewAdminPasswordsMatching =
+    newAdminPassword !== '' && newAdminPassword === confirmNewAdminPassword;
+
+  // Handle direct in-panel password update
+  const handleUpdatePasswordSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setPasswordUpdateError(null);
+
+    if (hasPasswordProvider && !currentPasswordInput) {
+      setPasswordUpdateError('कृपया अपना वर्तमान पासवर्ड दर्ज करें।');
+      return;
+    }
+
+    if (!adminPasswordStrength.isAcceptable) {
+      setPasswordUpdateError(
+        adminPasswordStrength.warnings[0] ||
+          'कृपया सुरक्षा मानकों के अनुसार कम से कम 8 अक्षर, बड़ा अक्षर (A-Z), छोटा अक्षर (a-z), संख्या (0-9) और विशेष चिह्न वाला मजबूत पासवर्ड चुनें।'
+      );
+      return;
+    }
+
+    if (newAdminPassword !== confirmNewAdminPassword) {
+      setPasswordUpdateError('दोनों नए पासवर्ड एक जैसे नहीं हैं। कृपया पुनः जाँच करें।');
+      return;
+    }
+
+    if (hasPasswordProvider && currentPasswordInput === newAdminPassword) {
+      setPasswordUpdateError('नया पासवर्ड आपके वर्तमान पासवर्ड से भिन्न होना चाहिए।');
+      return;
+    }
+
+    setIsUpdatingPassword(true);
+    try {
+      await updateAdminPassword(currentPasswordInput, newAdminPassword);
+      setCurrentPasswordInput('');
+      setNewAdminPassword('');
+      setConfirmNewAdminPassword('');
+      showNotification('success', 'एडमिन पासवर्ड सफलतापूर्वक अपडेट हो गया!');
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'पासवर्ड अपडेट करने में त्रुटि हुई।';
+      setPasswordUpdateError(msg);
+    } finally {
+      setIsUpdatingPassword(false);
     }
   };
 
@@ -238,7 +324,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-950/80 backdrop-blur-xs flex items-center justify-center p-3 sm:p-5">
-      <div className="bg-white rounded-2xl shadow-2xl max-w-5xl w-full max-h-[92vh] overflow-y-auto border border-slate-200 flex flex-col">
+      <div className="bg-white rounded-2xl shadow-2xl max-w-6xl w-full max-h-[92vh] overflow-y-auto border border-slate-200 flex flex-col">
         
         {/* Admin Header Strip */}
         <div className="bg-[#0B192C] text-white p-4 sm:p-5 flex items-center justify-between gap-3 border-b border-slate-800 shrink-0">
@@ -505,7 +591,20 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                   </div>
                 </div>
 
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2">
+                  <button
+                    onClick={() => {
+                      setActiveTab('security');
+                      setEditingPostId(null);
+                      setPasswordUpdateError(null);
+                    }}
+                    className="flex items-center gap-1 text-xs text-amber-800 hover:text-amber-950 bg-amber-50 border border-amber-300 px-3 py-1.5 rounded-lg transition font-semibold cursor-pointer"
+                    title="एडमिन पासवर्ड बदलें"
+                  >
+                    <Lock className="w-3.5 h-3.5 text-amber-700" />
+                    <span>पासवर्ड बदलें</span>
+                  </button>
+
                   <button
                     onClick={handleResetPassword}
                     disabled={isResettingPassword}
@@ -526,8 +625,31 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                 </div>
               </div>
 
+              {/* Email Verification Notice (for password login if email not verified yet) */}
+              {user && !user.emailVerified && (
+                <div className="mb-5 p-3.5 bg-amber-50 border border-amber-300 rounded-xl flex flex-wrap items-center justify-between gap-3 text-xs text-amber-950">
+                  <div className="flex items-start gap-2">
+                    <Mail className="w-4 h-4 text-amber-700 shrink-0 mt-0.5" />
+                    <div>
+                      <strong className="block">ईमेल सत्यापन आवश्यक (Email Verification Required for Firestore Writes)</strong>
+                      <span className="text-amber-800">
+                        डेटाबेस में सुरक्षित लिखने के लिए कृपया अपना एडमिन ईमेल सत्यापित करें या Google से साइन इन करें।
+                      </span>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleSendVerificationEmail}
+                    disabled={isSendingVerification}
+                    className="bg-amber-600 hover:bg-amber-700 disabled:opacity-50 text-white font-bold px-3 py-1.5 rounded-lg transition cursor-pointer shrink-0"
+                  >
+                    {isSendingVerification ? 'भेजा जा रहा है...' : 'ईमेल सत्यापित करें'}
+                  </button>
+                </div>
+              )}
+
               {/* Navigation Tabs */}
-              <div className="flex items-center gap-2 border-b border-slate-200 mb-6">
+              <div className="flex items-center gap-2 border-b border-slate-200 mb-6 overflow-x-auto whitespace-nowrap">
                 <button
                   onClick={() => {
                     setActiveTab('dashboard');
@@ -540,6 +662,21 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                   }`}
                 >
                   डैशबोर्ड एवं सारांश
+                </button>
+
+                <button
+                  onClick={() => {
+                    setActiveTab('auto-notifications');
+                    setEditingPostId(null);
+                  }}
+                  className={`px-4 py-2 text-xs sm:text-sm font-bold border-b-2 transition cursor-pointer flex items-center gap-1.5 ${
+                    activeTab === 'auto-notifications'
+                      ? 'border-[#BA0000] text-[#BA0000]'
+                      : 'border-transparent text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  <Radio className="w-4 h-4" />
+                  <span>स्वचालित सूचना प्रणाली (Automatic Notifications)</span>
                 </button>
 
                 <button
@@ -569,7 +706,31 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                 >
                   सभी पोस्ट प्रबंधित करें ({posts.length})
                 </button>
+
+                <button
+                  onClick={() => {
+                    setActiveTab('security');
+                    setEditingPostId(null);
+                    setPasswordUpdateError(null);
+                  }}
+                  className={`px-4 py-2 text-xs sm:text-sm font-bold border-b-2 transition cursor-pointer flex items-center gap-1.5 ${
+                    activeTab === 'security'
+                      ? 'border-amber-500 text-amber-700'
+                      : 'border-transparent text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  <ShieldCheck className="w-4 h-4" />
+                  <span>सुरक्षा एवं पासवर्ड अपडेट</span>
+                </button>
               </div>
+
+              {/* TAB 1B: AUTOMATIC GOVERNMENT NOTIFICATIONS */}
+              {activeTab === 'auto-notifications' && (
+                <AutomaticNotificationsPanel
+                  onPostPublished={onRefresh}
+                  onNotify={showNotification}
+                />
+              )}
 
               {/* TAB 1: DASHBOARD */}
               {activeTab === 'dashboard' && (
@@ -1046,6 +1207,151 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                         ))}
                       </tbody>
                     </table>
+                  </div>
+                </div>
+              )}
+
+              {/* TAB 4: SECURITY & UPDATE PASSWORD */}
+              {activeTab === 'security' && (
+                <div className="max-w-lg mx-auto bg-slate-50 border border-slate-200 rounded-2xl p-5 sm:p-6 shadow-xs space-y-5">
+                  <div className="flex items-start gap-3 pb-4 border-b border-slate-200">
+                    <div className="p-2.5 bg-amber-100 text-amber-700 rounded-xl shrink-0">
+                      <KeyRound className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h3 className="text-base font-bold text-slate-900">
+                        एडमिन पासवर्ड अपडेट करें (Update Password)
+                      </h3>
+                      <p className="text-xs text-slate-600 mt-0.5 leading-relaxed">
+                        अपने व्यवस्थापक खाते ({AUTHORIZED_ADMIN_EMAIL}) के लिए मजबूत और सुरक्षित पासवर्ड सेट अथवा अपडेट करें।
+                      </p>
+                    </div>
+                  </div>
+
+                  {!hasPasswordProvider && (
+                    <div className="p-3 bg-blue-50 border border-blue-200 text-blue-900 rounded-xl text-xs leading-relaxed">
+                      आप वर्तमान में Google खाते से लॉगिन हैं। नीचे नया मजबूत पासवर्ड सेट करके आप अपने अधिकृत ईमेल के लिए पासवर्ड लॉगिन भी सक्षम कर सकते हैं।
+                    </div>
+                  )}
+
+                  {passwordUpdateError && (
+                    <div className="p-3 bg-rose-50 border border-rose-300 text-rose-800 rounded-lg text-xs font-semibold flex items-start gap-2">
+                      <AlertCircle className="w-4 h-4 shrink-0 text-rose-600 mt-0.5" />
+                      <span>{passwordUpdateError}</span>
+                    </div>
+                  )}
+
+                  <form onSubmit={handleUpdatePasswordSubmit} className="space-y-4">
+                    {hasPasswordProvider && (
+                      <div>
+                        <label className="block text-xs font-bold text-slate-800 mb-1">
+                          वर्तमान पासवर्ड (Current Password) *
+                        </label>
+                        <div className="relative">
+                          <input
+                            type={showCurrentAdminPwd ? 'text' : 'password'}
+                            required
+                            value={currentPasswordInput}
+                            onChange={(e) => setCurrentPasswordInput(e.target.value)}
+                            placeholder="अपना वर्तमान पासवर्ड दर्ज करें..."
+                            className="w-full p-2.5 pr-10 bg-white border border-slate-300 rounded-lg text-sm text-slate-900 focus:ring-2 focus:ring-amber-500 focus:outline-none"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setShowCurrentAdminPwd(!showCurrentAdminPwd)}
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 cursor-pointer"
+                            aria-label={showCurrentAdminPwd ? 'पासवर्ड छिपाएं' : 'पासवर्ड देखें'}
+                          >
+                            {showCurrentAdminPwd ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
+                    <div>
+                      <label className="block text-xs font-bold text-slate-800 mb-1">
+                        नया पासवर्ड (New Password) *
+                      </label>
+                      <div className="relative">
+                        <input
+                          type={showNewAdminPwd ? 'text' : 'password'}
+                          required
+                          value={newAdminPassword}
+                          onChange={(e) => setNewAdminPassword(e.target.value)}
+                          placeholder="नया मजबूत पासवर्ड दर्ज करें..."
+                          className="w-full p-2.5 pr-10 bg-white border border-slate-300 rounded-lg text-sm text-slate-900 focus:ring-2 focus:ring-amber-500 focus:outline-none"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowNewAdminPwd(!showNewAdminPwd)}
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 cursor-pointer"
+                          aria-label={showNewAdminPwd ? 'पासवर्ड छिपाएं' : 'पासवर्ड देखें'}
+                        >
+                          {showNewAdminPwd ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                        </button>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-slate-800 mb-1">
+                        नया पासवर्ड दोबारा डालें (Confirm New Password) *
+                      </label>
+                      <div className="relative">
+                        <input
+                          type={showConfirmNewAdminPwd ? 'text' : 'password'}
+                          required
+                          value={confirmNewAdminPassword}
+                          onChange={(e) => setConfirmNewAdminPassword(e.target.value)}
+                          placeholder="नया पासवर्ड दोबारा दर्ज करें..."
+                          className="w-full p-2.5 pr-10 bg-white border border-slate-300 rounded-lg text-sm text-slate-900 focus:ring-2 focus:ring-amber-500 focus:outline-none"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowConfirmNewAdminPwd(!showConfirmNewAdminPwd)}
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 cursor-pointer"
+                          aria-label={showConfirmNewAdminPwd ? 'पासवर्ड छिपाएं' : 'पासवर्ड देखें'}
+                        >
+                          {showConfirmNewAdminPwd ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Real-Time Password Strength Meter */}
+                    <PasswordStrengthMeter
+                      password={newAdminPassword}
+                      confirmPassword={confirmNewAdminPassword}
+                      adminEmail={AUTHORIZED_ADMIN_EMAIL}
+                    />
+
+                    <button
+                      type="submit"
+                      disabled={
+                        isUpdatingPassword ||
+                        !adminPasswordStrength.isAcceptable ||
+                        !isNewAdminPasswordsMatching ||
+                        (hasPasswordProvider && !currentPasswordInput)
+                      }
+                      className="w-full flex items-center justify-center gap-2 bg-[#BA0000] hover:bg-red-800 disabled:opacity-50 text-white font-bold px-4 py-3 rounded-xl text-xs sm:text-sm shadow transition cursor-pointer"
+                    >
+                      <Lock className="w-4 h-4" />
+                      <span>
+                        {isUpdatingPassword
+                          ? 'पासवर्ड अपडेट हो रहा है...'
+                          : 'नया पासवर्ड अपडेट करें (Update Password)'}
+                      </span>
+                    </button>
+                  </form>
+
+                  <div className="pt-3 border-t border-slate-200 flex flex-wrap items-center justify-between gap-2 text-xs">
+                    <span className="text-slate-500">वर्तमान पासवर्ड भूल गए हैं?</span>
+                    <button
+                      type="button"
+                      onClick={handleResetPassword}
+                      disabled={isResettingPassword}
+                      className="font-bold text-amber-700 hover:text-amber-900 underline disabled:opacity-50 cursor-pointer"
+                    >
+                      {isResettingPassword ? 'रीसेट ईमेल भेजा जा रहा है...' : 'ईमेल पर रीसेट लिंक भेजें'}
+                    </button>
                   </div>
                 </div>
               )}

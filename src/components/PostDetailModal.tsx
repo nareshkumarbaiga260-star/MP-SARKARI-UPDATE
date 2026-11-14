@@ -43,7 +43,7 @@ export const PostDetailModal: React.FC<PostDetailModalProps> = ({ post, onClose 
       <div className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[92vh] overflow-y-auto border border-slate-200">
         
         {/* Top Header Strip */}
-        <div className="sticky top-0 z-10 bg-[#0B192C] text-white p-4 sm:p-5 flex items-start justify-between gap-4 border-b border-slate-700">
+        <div className="sticky top-0 z-10 bg-[#BA0000] text-white p-4 sm:p-5 flex items-start justify-between gap-4 border-b-2 border-red-800">
           <div>
             <div className="flex flex-wrap items-center gap-2 mb-2">
               <span className={`text-[11px] font-bold px-2.5 py-0.5 rounded-full border ${categoryMeta.badgeColor}`}>

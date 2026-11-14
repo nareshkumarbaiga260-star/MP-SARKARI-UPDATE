@@ -8,14 +8,137 @@ service cloud.firestore {
       return request.auth != null;
     }
 
-    // Strict single authorized owner verification
+    function incoming() {
+      return request.resource.data;
+    }
+
+    // Strict single authorized verified administrator check
     function isSingleAuthorizedAdmin() {
       return isSignedIn() &&
+        request.auth.token.email != null &&
+        request.auth.token.email_verified == true &&
         request.auth.token.email.lower() == 'nareshkumarbaiga260@gmail.com';
     }
 
     function isValidId(id) {
-      return id is string && id.size() > 0 && id.size() <= 128;
+      return id is string &&
+        id.size() > 0 &&
+        id.size() <= 128 &&
+        id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function isStr(val, maxLen) {
+      return val is string && val.size() <= maxLen;
+    }
+
+    function isValidPost(data) {
+      return data.keys().hasAll(['title', 'category', 'department', 'shortDescription', 'officialWebsiteUrl']) &&
+        isStr(data.title, 300) &&
+        isStr(data.category, 50) &&
+        isStr(data.department, 150) &&
+        isStr(data.shortDescription, 1000) &&
+        isStr(data.officialWebsiteUrl, 500) &&
+        (!('fullDescription' in data) || isStr(data.fullDescription, 10000)) &&
+        (!('totalVacancies' in data) || isStr(data.totalVacancies, 100)) &&
+        (!('qualification' in data) || isStr(data.qualification, 200)) &&
+        (!('ageLimit' in data) || isStr(data.ageLimit, 100)) &&
+        (!('startDate' in data) || isStr(data.startDate, 50)) &&
+        (!('lastDate' in data) || isStr(data.lastDate, 50)) &&
+        (!('examDate' in data) || isStr(data.examDate, 50)) &&
+        (!('applicationFee' in data) || isStr(data.applicationFee, 200)) &&
+        (!('applyOnlineUrl' in data) || isStr(data.applyOnlineUrl, 500)) &&
+        (!('notificationPdfUrl' in data) || isStr(data.notificationPdfUrl, 500)) &&
+        (!('thumbnailUrl' in data) || isStr(data.thumbnailUrl, 500)) &&
+        (!('authorEmail' in data) || isStr(data.authorEmail, 150));
+    }
+
+    function isValidGovernmentSource(data) {
+      return data.keys().hasAll(['name', 'department', 'url', 'method', 'region', 'enabled']) &&
+        data.keys().hasOnly([
+          'name', 'department', 'url', 'alternateUrl', 'portalHomeUrl', 'method', 'region',
+          'defaultAutoCategory', 'enabled', 'isDefault', 'connectionStatus', 'failureReason',
+          'statusMessage', 'lastErrorDetail', 'lastCheckedAt', 'lastSuccessfulCheckAt',
+          'lastHttpStatus', 'lastLatencyMs', 'retryCount', 'itemsDetectedLastRun',
+          'robotsAllowed', 'manualNotes', 'createdAt', 'updatedAt'
+        ]) &&
+        isStr(data.name, 150) &&
+        isStr(data.department, 200) &&
+        isStr(data.url, 500) &&
+        data.method in ['auto', 'rss', 'sitemap', 'api', 'html', 'pdf'] &&
+        data.region in ['MP', 'Central', 'State'] &&
+        data.enabled is bool &&
+        (!('alternateUrl' in data) || isStr(data.alternateUrl, 500)) &&
+        (!('portalHomeUrl' in data) || isStr(data.portalHomeUrl, 500)) &&
+        (!('defaultAutoCategory' in data) || isStr(data.defaultAutoCategory, 60)) &&
+        (!('failureReason' in data) || isStr(data.failureReason, 40)) &&
+        (!('statusMessage' in data) || isStr(data.statusMessage, 500)) &&
+        (!('lastErrorDetail' in data) || isStr(data.lastErrorDetail, 500)) &&
+        (!('lastCheckedAt' in data) || isStr(data.lastCheckedAt, 64)) &&
+        (!('lastSuccessfulCheckAt' in data) || isStr(data.lastSuccessfulCheckAt, 64)) &&
+        (!('manualNotes' in data) || isStr(data.manualNotes, 500)) &&
+        (!('connectionStatus' in data) || data.connectionStatus in ['connected', 'manual_config_needed', 'blocked_by_robots', 'failed', 'pending']);
+    }
+
+    function isValidDetectedNotification(data) {
+      return data.keys().hasAll([
+          'fingerprint', 'sourceId', 'department', 'title',
+          'autoCategory', 'websiteCategory', 'officialSourceUrl', 'status', 'detectedAt'
+        ]) &&
+        data.keys().hasOnly([
+          'fingerprint', 'sourceId', 'sourceName', 'department', 'title',
+          'description', 'autoCategory', 'websiteCategory', 'publishedDate',
+          'lastDate', 'notificationNumber', 'officialSourceUrl', 'pdfUrl',
+          'applyOnlineUrl', 'status', 'detectedAt', 'reviewedAt',
+          'reviewedBy', 'publishedPostId'
+        ]) &&
+        isStr(data.fingerprint, 128) &&
+        isStr(data.sourceId, 128) &&
+        isStr(data.department, 200) &&
+        isStr(data.title, 400) &&
+        isStr(data.autoCategory, 60) &&
+        isStr(data.websiteCategory, 50) &&
+        isStr(data.officialSourceUrl, 600) &&
+        data.status in ['pending', 'approved', 'rejected'] &&
+        isStr(data.detectedAt, 64) &&
+        (!('description' in data) || isStr(data.description, 2000)) &&
+        (!('pdfUrl' in data) || isStr(data.pdfUrl, 600)) &&
+        (!('applyOnlineUrl' in data) || isStr(data.applyOnlineUrl, 600));
+    }
+
+    function isValidApprovedNotification(data) {
+      return data.keys().hasAll([
+          'title', 'department', 'autoCategory', 'websiteCategory',
+          'officialSourceUrl', 'approvedBy', 'approvedAt'
+        ]) &&
+        data.keys().hasOnly([
+          'detectedId', 'fingerprint', 'sourceId', 'sourceName', 'department',
+          'title', 'description', 'autoCategory', 'websiteCategory', 'publishedDate',
+          'lastDate', 'notificationNumber', 'officialSourceUrl', 'pdfUrl',
+          'applyOnlineUrl', 'approvedBy', 'approvedAt', 'linkedPostId'
+        ]) &&
+        isStr(data.title, 400) &&
+        isStr(data.department, 200) &&
+        isStr(data.autoCategory, 60) &&
+        isStr(data.websiteCategory, 50) &&
+        isStr(data.officialSourceUrl, 600) &&
+        isStr(data.approvedBy, 150) &&
+        data.approvedBy.lower() == 'nareshkumarbaiga260@gmail.com' &&
+        isStr(data.approvedAt, 64) &&
+        (!('description' in data) || isStr(data.description, 2000)) &&
+        (!('pdfUrl' in data) || isStr(data.pdfUrl, 600)) &&
+        (!('applyOnlineUrl' in data) || isStr(data.applyOnlineUrl, 600));
+    }
+
+    function isValidMonitoringLog(data) {
+      return data.keys().hasAll(['runType', 'status', 'message', 'checkedAt']) &&
+        data.keys().hasOnly([
+          'runType', 'sourceId', 'sourceName', 'status', 'message',
+          'newCount', 'duplicateCount', 'failedCount', 'checkedAt'
+        ]) &&
+        data.runType in ['scheduled', 'manual', 'alert'] &&
+        data.status in ['connected', 'manual_config_needed', 'blocked_by_robots', 'failed', 'info'] &&
+        isStr(data.message, 600) &&
+        isStr(data.checkedAt, 64);
     }
 
     // Default deny catch-all
@@ -26,12 +149,41 @@ service cloud.firestore {
     // Posts collection: Public read for all visitors; write/edit/delete strictly for single authorized admin
     match /posts/{postId} {
       allow read: if true;
-      allow create, update, delete: if isValidId(postId) && isSingleAuthorizedAdmin();
+      allow create, update: if isValidId(postId) && isSingleAuthorizedAdmin() && isValidPost(incoming());
+      allow delete: if isValidId(postId) && isSingleAuthorizedAdmin();
     }
 
     // Admin accounts: Strictly locked - no additional admin creation permitted
     match /admins/{adminId} {
       allow read, write: if false;
+    }
+
+    // Official monitored government sources (Admin only)
+    match /government_sources/{sourceId} {
+      allow read: if isSingleAuthorizedAdmin();
+      allow create, update: if isValidId(sourceId) && isSingleAuthorizedAdmin() && isValidGovernmentSource(incoming());
+      allow delete: if isValidId(sourceId) && isSingleAuthorizedAdmin();
+    }
+
+    // Pending/detected raw notifications awaiting admin verification (Admin only - NEVER public)
+    match /detected_notifications/{notificationId} {
+      allow read: if isSingleAuthorizedAdmin();
+      allow create, update: if isValidId(notificationId) && isSingleAuthorizedAdmin() && isValidDetectedNotification(incoming());
+      allow delete: if isValidId(notificationId) && isSingleAuthorizedAdmin();
+    }
+
+    // Admin-approved official notifications (Public read for citizens; write strictly for single authorized admin)
+    match /approved_notifications/{notificationId} {
+      allow read: if true;
+      allow create, update: if isValidId(notificationId) && isSingleAuthorizedAdmin() && isValidApprovedNotification(incoming());
+      allow delete: if isValidId(notificationId) && isSingleAuthorizedAdmin();
+    }
+
+    // Backend monitoring execution logs (Admin only)
+    match /monitoring_logs/{logId} {
+      allow read: if isSingleAuthorizedAdmin();
+      allow create, update: if isValidId(logId) && isSingleAuthorizedAdmin() && isValidMonitoringLog(incoming());
+      allow delete: if isValidId(logId) && isSingleAuthorizedAdmin();
     }
   }
 }

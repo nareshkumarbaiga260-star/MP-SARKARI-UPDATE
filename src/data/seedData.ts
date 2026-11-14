@@ -406,5 +406,66 @@ export const INITIAL_GOVT_POSTS: Omit<Post, 'id'>[] = [
     isUrgent: false,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString()
+  },
+  {
+    title: 'मध्य प्रदेश ITI एवं पॉलीटेक्निक ऑनलाइन प्रवेश 2026 - प्रथम चरण काउंसलिंग एवं चॉइस फिलिंग',
+    category: 'admission',
+    department: 'तकनीकी शिक्षा एवं कौशल विकास विभाग MP (DTE MP)',
+    shortDescription: 'मध्य प्रदेश के समस्त शासकीय एवं निजी आईटीआई व पॉलीटेक्निक संस्थानों में इंजीनियरिंग एवं गैर-इंजीनियरिंग ट्रेड्स में ऑनलाइन एडमिशन।',
+    fullDescription: `कौशल विकास संचालनालय, मध्य प्रदेश द्वारा शैक्षणिक सत्र 2026 हेतु शासकीय एवं प्राइवेट आईटीआई में विभिन्न एनसीवीटी (NCVT) व एससीवीटी (SCVT) व्यवसायों में प्रवेश हेतु ऑनलाइन काउंसलिंग प्रक्रिया प्रारंभ की गई है।
+
+### प्रमुख तिथियाँ व चरण:
+1. ऑनलाइन पंजीयन एवं प्रोफाइल सत्यापन
+2. ऐच्छिक संस्थाओं एवं व्यवसायों की प्राथमिकता (Choice Filling)
+3. प्रथम चरण की मेरिट सूची एवं आवंटन पत्र (Allotment Letter)
+4. संबंधित आईटीआई में मूल दस्तावेजों का सत्यापन एवं प्रवेश शुल्क जमा करना`,
+    totalVacancies: '1.2 लाख+ सीटें',
+    qualification: '10वीं (हाई स्कूल) उत्तीर्ण (गणित व विज्ञान विषय सहित)',
+    ageLimit: 'न्यूनतम 14 वर्ष (अधिकतम आयु सीमा का कोई बंधन नहीं)',
+    startDate: '15-05-2026',
+    lastDate: '15-06-2026',
+    examDate: '10वीं मेरिट आधार पर',
+    applicationFee: 'पंजीयन शुल्क: ₹35/- (+ पोर्टल शुल्क)',
+    applyOnlineUrl: 'https://iti.mponline.gov.in',
+    notificationPdfUrl: 'https://iti.mponline.gov.in/Admission_Rulebook.pdf',
+    officialWebsiteUrl: 'https://iti.mponline.gov.in',
+    thumbnailUrl: 'admission',
+    isFeatured: false,
+    isUrgent: false,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  },
+  {
+    title: 'मुख्यमंत्री मेधावी विद्यार्थी योजना (MMVY) 2026 - उच्च शिक्षा हेतु 100% फीस प्रतिपूर्ति छात्रवृत्ति',
+    category: 'scholarship',
+    department: 'उच्च शिक्षा विभाग मध्य प्रदेश शासन',
+    shortDescription: '12वीं में 70% (MP Board) या 85% (CBSE/ICSE) अंक प्राप्त करने वाले मेधावी विद्यार्थियों की इंजीनियरिंग, मेडिकल व स्नातक की पूरी फीस सरकार भरेगी।',
+    fullDescription: `मध्य प्रदेश शासन द्वारा मेधावी विद्यार्थियों को उच्च शिक्षा के अवसरों से वंचित न होने देने के लिए 'मुख्यमंत्री मेधावी विद्यार्थी योजना' संचालित है।
+
+### प्रमुख लाभ:
+- इंजीनियरिंग (JEE Mains में रैंक 1.5 लाख तक): शासकीय व निजी कॉलेज की समस्त फीस।
+- मेडिकल (NEET): शासकीय एवं निजी मेडिकल कॉलेज की पूरी एमबीबीएस फीस।
+- लॉ (CLAT) एवं राष्ट्रीय संस्थानों (IIT, IIM, NLU, AIIMS): समस्त शिक्षण शुल्क।
+- शासकीय कॉलेजों में बीए, बीएससी, बीकॉम, पॉलिटेक्निक की पूरी फीस।
+
+### पात्रता:
+- मध्य प्रदेश के मूल निवासी हों।
+- पालक की वार्षिक आय ₹6 लाख से कम हो।
+- एमपी बोर्ड में 70% या सीबीएसई/आईसीएसई में 85% या अधिक अंक।`,
+    totalVacancies: 'समस्त पात्र मेधावी विद्यार्थी',
+    qualification: '12वीं उत्तीर्ण (70% MP Board / 85% CBSE)',
+    ageLimit: 'पात्रता अनुसार',
+    startDate: 'पोर्टल खुला है',
+    lastDate: 'सत्र 2026-27 के दौरान',
+    examDate: 'लागू नहीं (मेरिट आधार)',
+    applicationFee: 'निःशुल्क (Free Online Apply)',
+    applyOnlineUrl: 'https://scholarshipportal.mp.nic.in',
+    notificationPdfUrl: 'https://scholarshipportal.mp.nic.in/MMVY_Guidelines.pdf',
+    officialWebsiteUrl: 'https://scholarshipportal.mp.nic.in',
+    thumbnailUrl: 'scholarship',
+    isFeatured: true,
+    isUrgent: false,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
   }
 ];

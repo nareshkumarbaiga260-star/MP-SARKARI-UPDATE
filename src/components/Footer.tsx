@@ -8,12 +8,16 @@ interface FooterProps {
   onSelectCategory: (cat: PostCategory) => void;
   onOpenModal: (type: InfoModalType) => void;
   onOpenAdmin: () => void;
+  onOpenOnlineTools?: () => void;
+  onOpenPassportMaker?: () => void;
 }
 
 export const Footer: React.FC<FooterProps> = ({
   onSelectCategory,
   onOpenModal,
-  onOpenAdmin
+  onOpenAdmin,
+  onOpenOnlineTools,
+  onOpenPassportMaker
 }) => {
   const scrollToTop = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -29,11 +33,11 @@ export const Footer: React.FC<FooterProps> = ({
           {/* Col 1: About Portal */}
           <div className="space-y-3">
             <div className="flex items-center gap-2.5">
-              <div className="w-9 h-9 rounded-lg bg-amber-500 flex items-center justify-center font-bold text-slate-950 text-xs">
+              <div className="w-9 h-9 rounded-lg bg-[#BA0000] border border-amber-300 flex items-center justify-center font-bold text-white text-xs shadow-xs">
                 MP
               </div>
               <span className="text-base font-black text-white tracking-wide">
-                <span className="text-amber-400">MP</span> SARKARI <span className="text-orange-500">UPDATE</span>
+                <span className="text-white">MP</span> SARKARI <span className="text-red-500">UPDATE</span>
               </span>
             </div>
 
@@ -197,6 +201,26 @@ export const Footer: React.FC<FooterProps> = ({
                   नियम व शर्तें (Terms & Conditions)
                 </button>
               </li>
+              {onOpenOnlineTools && (
+                <li>
+                  <button
+                    onClick={onOpenOnlineTools}
+                    className="hover:text-amber-400 font-bold text-amber-300 text-left cursor-pointer"
+                  >
+                    ऑनलाइन टूल्स (Online Tools)
+                  </button>
+                </li>
+              )}
+              {onOpenPassportMaker && (
+                <li>
+                  <button
+                    onClick={onOpenPassportMaker}
+                    className="hover:text-amber-400 font-semibold text-white text-left cursor-pointer"
+                  >
+                    पासपोर्ट फोटो मेकर (35×45 mm)
+                  </button>
+                </li>
+              )}
               <li className="pt-2 border-t border-slate-800">
                 <button
                   onClick={onOpenAdmin}

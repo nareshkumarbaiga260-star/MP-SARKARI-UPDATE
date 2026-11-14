@@ -19,10 +19,10 @@ export const UpcomingDeadlines: React.FC<UpcomingDeadlinesProps> = ({
   if (deadlinePosts.length === 0) return null;
 
   return (
-    <div className="bg-amber-50/60 rounded-xl border border-amber-200 p-4 mb-6 shadow-xs">
-      <div className="flex items-center justify-between mb-3 border-b border-amber-200/80 pb-2">
+    <div className="bg-red-50/40 rounded-xl border border-red-200 p-4 mb-6 shadow-xs">
+      <div className="flex items-center justify-between mb-3 border-b border-red-200 pb-2">
         <div className="flex items-center gap-2">
-          <span className="p-1.5 bg-amber-500 text-slate-950 rounded-lg shadow-xs">
+          <span className="p-1.5 bg-[#BA0000] text-white rounded-lg shadow-xs">
             <AlertCircle className="w-4 h-4" />
           </span>
           <div>
@@ -34,7 +34,7 @@ export const UpcomingDeadlines: React.FC<UpcomingDeadlinesProps> = ({
             </p>
           </div>
         </div>
-        <span className="text-xs bg-amber-200/80 text-amber-900 font-bold px-2 py-0.5 rounded-full">
+        <span className="text-xs bg-red-100 text-red-800 font-bold px-2.5 py-0.5 rounded-full border border-red-200">
           ताज़ा अलर्ट
         </span>
       </div>
@@ -44,7 +44,7 @@ export const UpcomingDeadlines: React.FC<UpcomingDeadlinesProps> = ({
           <div
             key={post.id}
             onClick={() => onSelectPost(post)}
-            className="bg-white rounded-lg p-3 border border-amber-200/70 hover:border-amber-400 hover:shadow-md transition cursor-pointer flex flex-col justify-between group"
+            className="bg-white rounded-lg p-3 border border-slate-200 hover:border-red-500 hover:shadow-md transition cursor-pointer flex flex-col justify-between group"
           >
             <div>
               <div className="flex items-center justify-between text-[11px] text-slate-500 mb-1">

@@ -33,7 +33,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({
             value={filters.searchQuery}
             onChange={(e) => onChangeFilters({ ...filters, searchQuery: e.target.value })}
             placeholder="नौकरी का नाम, पद, योजना या विभाग खोजें (उदा. पुलिस, पटवारी, MPPSC)..."
-            className="w-full pl-9 pr-9 py-2.5 bg-slate-50 border border-slate-300 rounded-lg text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition"
+            className="w-full pl-9 pr-9 py-2.5 bg-slate-50 border border-slate-300 rounded-lg text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-red-600 transition"
           />
           {filters.searchQuery && (
             <button
@@ -50,7 +50,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({
           <select
             value={filters.department}
             onChange={(e) => onChangeFilters({ ...filters, department: e.target.value })}
-            className="w-full py-2.5 px-3 bg-slate-50 border border-slate-300 rounded-lg text-xs sm:text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition"
+            className="w-full py-2.5 px-3 bg-slate-50 border border-slate-300 rounded-lg text-xs sm:text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-red-600 transition"
           >
             {DEPARTMENT_LIST.map((dept) => (
               <option key={dept} value={dept}>
